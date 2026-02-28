@@ -4,12 +4,13 @@ import messRouter from "./modules/messageModule/mes.controller.js";
 import userRouter from "./modules/userModule/user.controller.js";
 import authRouter from "./modules/authModule/auth.controller.js";
 import { DbConnection } from "./db/db.connection.js";
+import cors from "cors"
 export const bootstrap = async () => {
   DbConnection();
   const app = express();
   app.use(express.json());
   const PORT = 3000;
-
+app.use(cors())
   app.use("/user", userRouter);
   app.use("/message", messRouter);
   app.use("/auth", authRouter);

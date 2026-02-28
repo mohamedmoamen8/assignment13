@@ -1,7 +1,10 @@
 import { Router } from "express";
 import { successRes } from "../../utils/res.handle.js";
 import { userModel } from "../../db/models/user.models.js";
-import { authentication ,verifyTokenMiddleware} from "../../middleware/auth.middeleware.js";
+import {
+  authentication,
+  verifyTokenMiddleware,
+} from "../../middleware/auth.middeleware.js";
 import { upload } from "../../middleware/upload.middleware.js";
 import { getUserProfile, login, signup } from "./auth.service.js";
 import dotenv from "dotenv";
@@ -13,10 +16,13 @@ dotenv.config({
 import * as authservice from "./auth.service.js";
 import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
+import { validation } from "../../middleware/valdation.middleware.js";
+import { loginSchema, signupSchema } from "./auth.validation.js";
 
 const router = Router();
-router.post("/signup", async (req, res, next) => {
+router.post("/signup", validation(signupSchema),async (req, res, next) => {
   const { username, password, email, age, gender } = req.body;
+  
   const { data } = await signup({ username, password, email, gender, age });
 
   return successRes({
@@ -26,7 +32,7 @@ router.post("/signup", async (req, res, next) => {
     message: "created",
   });
 });
-router.post("/login", async (req, res, next) => {
+router.post("/login", validation(loginSchema),async (req, res, next) => {
   const { data } = await login(req.body);
   return successRes({
     res,
@@ -117,5 +123,10 @@ router.post(
     });
   },
 );
+router.post("/signup/gmail", async (req, res) => {
+  const { idToken } = req.body;
+   const { data } = await authservice.googlesignup({ gooleToken: idToken });
+  return successRes({ res, data, message: "signup with google" });
+});
 
 export default router;

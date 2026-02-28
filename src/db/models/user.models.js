@@ -1,15 +1,14 @@
-
 import mongoose from "mongoose";
 
 const { model, models, Schema } = mongoose;
 
-import { Gender } from "../enums/user.enums.js";
+import { Gender,  providertypes} from "../enums/user.enums.js";
 const userShecma = new Schema(
   {
     firstName: {
       type: String,
       required: true,
-      minLength: 3,
+      minLength: 2,
       maxLength: 50,
     },
     lastName: {
@@ -25,7 +24,14 @@ const userShecma = new Schema(
     },
     password: {
       type: String,
-      required: true,
+      required: function () {
+        if (this.provider == providertypes.system) {
+          return true;
+        } 
+        else {
+          return false;
+        }
+      },
       minLength: 8,
     },
     gender: {
@@ -42,6 +48,11 @@ const userShecma = new Schema(
     isDeleted: {
       type: Boolean,
       default: false,
+    },
+    provider: {
+      type: Number,
+      defult: providertypes.system,
+      enum: Object.values(providertypes),
     },
   },
 
