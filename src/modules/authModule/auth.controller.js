@@ -18,6 +18,7 @@ import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
 import { validation } from "../../middleware/valdation.middleware.js";
 import { loginSchema, signupSchema } from "./auth.validation.js";
+import { updatePasswordSchema } from "./auth.validation.js";
 
 const router = Router();
 router.post("/signup", validation(signupSchema),async (req, res, next) => {
@@ -128,5 +129,32 @@ router.post("/signup/gmail", async (req, res) => {
    const { data } = await authservice.googlesignup({ gooleToken: idToken });
   return successRes({ res, data, message: "signup with google" });
 });
+router.patch("/update-password", authentication, validation(updatePasswordSchema), async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
 
+    const { data } = await authservice.updatePassword({
+      userId: req.user._id,
+      currentPassword,
+      newPassword,
+    });
+
+    return successRes({ res, data, status: 200, message: "Password updated" });
+  } catch (error) {
+    next(error);
+  }
+});
+
+
+router.post("/logout", authentication, async (req, res, next) => {
+  try {
+    const token = req.headers.authorization.split(" ")[1];
+
+    const { data } = await authservice.logout({ token });
+
+    return successRes({ res, data, status: 200, message: "Logged out" });
+  } catch (error) {
+    next(error);
+  }
+});
 export default router;
