@@ -34,3 +34,21 @@ export const updatePasswordSchema = Joi.object({
   newPassword: Joi.string().min(8).disallow(Joi.ref("currentPassword")).required()
     .messages({ "any.invalid": "New password must be different from current password" }),
 });
+export const enableTwoFactorSchema = Joi.object({
+  otp: Joi.string().length(6).required(),
+});
+
+export const loginConfirmSchema = Joi.object({
+  email: Joi.string().email().required(),
+  otp: Joi.string().length(6).required(),
+});
+
+export const forgetPasswordSchema = Joi.object({
+  email: Joi.string().email().required(),
+});
+
+export const resetPasswordSchema = Joi.object({
+  email: Joi.string().email().required(),
+  otp: Joi.string().length(6).required(),
+  newPassword: Joi.string().min(8).required(),
+});
