@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const { model, models, Schema } = mongoose;
 
-import { Gender,  providertypes} from "../enums/user.enums.js";
+import { Gender, providertypes,UserRole } from "../enums/user.enums.js";
 const userShecma = new Schema(
   {
     firstName: {
@@ -27,8 +27,7 @@ const userShecma = new Schema(
       required: function () {
         if (this.provider == providertypes.system) {
           return true;
-        } 
-        else {
+        } else {
           return false;
         }
       },
@@ -44,6 +43,31 @@ const userShecma = new Schema(
       default: false,
     },
     age: Number,
+    profilePicture: { type: String, defult: null },
+    coverPictures: {
+      type: [String],
+      default: [],
+      validate: {
+        validator: (arr) => arr.length <= 2,
+        message: "Maximum 2 cover images allowed",
+      },
+    },
+
+    pictureGallery: {
+      type: [String],
+      default: [],
+    },
+
+    profileVisitCount: {
+      type: Number,
+      default: 0,
+    },
+
+    role: {
+      type: Number,
+      default: UserRole.user,
+      enum: Object.values(UserRole),
+    },
 
     isDeleted: {
       type: Boolean,
@@ -84,4 +108,13 @@ userShecma
     return `${this.firstName} ${this.lastName}`;
   });
 
+
+
+userShecma.index(
+  { createdAt: 1 },
+  {
+    expireAfterSeconds: 86400,
+    partialFilterExpression: { isEmailconfirmed: false },
+  }
+);
 export const userModel = models.User || model("User", userShecma);

@@ -8,6 +8,7 @@ import {
 import { upload } from "../../middleware/upload.middleware.js";
 import { getUserProfile, login, signup } from "./auth.service.js";
 import dotenv from "dotenv";
+import { updatePasword } from "./auth.service.js";
 
 dotenv.config({
   path: "./config/.env.development",
@@ -109,7 +110,7 @@ router.post("/verify-otp", async (req, res) => {
 router.post(
   "/upload",
   verifyTokenMiddleware,
-  upload.single("avatar"),
+  upload({dest:"users"}).single("avatar"),
   async (req, res) => {
     const userId = req.user._id;
 
@@ -129,4 +130,31 @@ router.post("/signup/gmail", async (req, res) => {
   return successRes({ res, data, message: "signup with google" });
 });
 
+router.patch("/update-password", authentication, validation(updatePasswordSchema), async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    const { data } = await authservice.updatePassword({
+      userId: req.user._id,
+      currentPassword,
+      newPassword,
+    });
+
+    return successRes({ res, data, status: 200, message: "Password updated" });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/logout", authentication, async (req, res, next) => {
+  try {
+    const token = req.headers.authorization.split(" ")[1];
+
+    const { data } = await authservice.logout({ token });
+
+    return successRes({ res, data, status: 200, message: "Logged out" });
+  } catch (error) {
+    next(error);
+  }
+});
 export default router;

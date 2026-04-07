@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import redisClient from "../utils/redisclient.js";
 
 dotenv.config({
   path: "./config/.env.development"
@@ -35,7 +36,7 @@ export const authentication = (req, res, next) => {
 };
 
 
-export const verifyTokenMiddleware = (req, res, next) => {
+export const verifyTokenMiddleware = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
 
@@ -48,7 +49,10 @@ export const verifyTokenMiddleware = (req, res, next) => {
     if (!token) {
       return res.status(401).json({ message: "Token missing" });
     }
-
+    const isBlackListed = await redisClient.get(`blacklist_${token}`);
+if (isBlackListed) {
+  return res.status(401).json({ message: "Token is blacklisted" });
+}
     const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
 
     req.user = decoded; 

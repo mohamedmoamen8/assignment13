@@ -29,3 +29,11 @@ export const loginSchema = {
     password: joi.string().min(6).max(100).required(),
   }),
 };
+
+export const updatePasswordSchema = joi.object({
+  currentPassword: joi.string().min(6).max(100).required(),
+  newPassword: joi.string().min(6).max(100).regex(new RegExp("^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]{6,}$") ).required(),
+  repeatNewPassword: joi.string().valid(joi.ref('newPassword')).required().messages({
+    'any.only': 'New passwords do not match'
+  }),
+});

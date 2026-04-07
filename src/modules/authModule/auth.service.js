@@ -9,6 +9,7 @@ import dotenv from "dotenv";
 import { OAuth2Client } from "google-auth-library";
 import { sendOTPEmail } from "../../utils/email.js";
 import { providertypes } from "../../db/enums/user.enums.js";
+import redisClient from "../../utils/redisclient.js"; 
 
 dotenv.config({
   path: "./config/.env.development",
@@ -141,4 +142,39 @@ export const googlesignup = async ({ gooleToken }) => {
       refreshToken,
     },
   };
+};
+export const updatePasword = async({userId,currentPassword,newPassword})=>{
+  const user = await userModel.findById(userId).select("password provider");
+
+  if (!user) {
+    errorRes({ message: "User not found", status: 404 });
+  }
+
+  if (user.provider !== providertypes.system) {
+    errorRes({ message: "Google accounts cannot update password", status: 400 });
+  }
+
+  const isMatch = await bcrypt.compare(currentPassword, user.password);
+  if (!isMatch) {
+    errorRes({ message: "Current password is incorrect", status: 400 });
+  }
+
+  const hashed = await generateHash({ plaintext: newPassword, target: "argon" });
+
+  user.password = hashed;
+  await user.save();
+
+  return { data: { message: "Password updated successfully" } };
+};
+
+export const logout = async ({ token }) => {
+  const decoded = jwt.decode(token);
+
+  const ttl = decoded.exp - Math.floor(Date.now() / 1000);
+
+  if (ttl > 0) {
+    await redisClient.setEx(`blacklist_${token}`, ttl, "true");
+  }
+
+  return { data: { message: "Logged out successfully" } };
 };
