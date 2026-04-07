@@ -19,6 +19,13 @@ import jwt from "jsonwebtoken";
 import { OAuth2Client } from "google-auth-library";
 import { validation } from "../../middleware/valdation.middleware.js";
 import { loginSchema, signupSchema } from "./auth.validation.js";
+import { updatePasswordSchema } from "./auth.validation.js";
+import { 
+  enableTwoFactorSchema,
+  loginConfirmSchema,
+  forgetPasswordSchema,
+  resetPasswordSchema,
+} from "./auth.validation.js";  
 
 const router = Router();
 router.post("/signup", validation(signupSchema),async (req, res, next) => {
@@ -129,7 +136,6 @@ router.post("/signup/gmail", async (req, res) => {
    const { data } = await authservice.googlesignup({ gooleToken: idToken });
   return successRes({ res, data, message: "signup with google" });
 });
-
 router.patch("/update-password", authentication, validation(updatePasswordSchema), async (req, res, next) => {
   try {
     const { currentPassword, newPassword } = req.body;
@@ -157,4 +163,65 @@ router.post("/logout", authentication, async (req, res, next) => {
     next(error);
   }
 });
+
+router.post("/enable-2fa", authentication, validation(enableTwoFactorSchema), async (req, res, next) => {
+  try {
+    const { data } = await authservice.enableTwoFactor({
+      userId: req.user._id,
+    });
+
+    return successRes({ res, data, status: 200, message: "2FA enabled" });
+  } catch (error) {
+    next(error);
+  }
+});
+router.post ("/verify-2fa", authentication, validation(loginConfirmSchema), async (req, res, next) => {
+  try {
+    const { otp } = req.body;
+
+    const { data } = await authservice.verifyTwoFactor({
+      userId: req.user._id,
+      otp,
+    });
+
+    return successRes({ res, data, status: 200, message: "2FA verified" });
+  } catch (error) {
+    next(error);
+  }
+});
+router.post("/login-confirm", validation(loginConfirmSchema), async (req, res, next) => {
+  try {
+    const { email, otp } = req.body;
+
+    const { data } = await authservice.loginConfirm({ email, otp });
+
+    return successRes({ res, data, status: 200, message: "Login confirmed" });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/forget-password", validation(forgetPasswordSchema), async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    const { data } = await authservice.forgetPassword({ email });
+
+    return successRes({ res, data, status: 200, message: "Password reset email sent" });
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.patch("/reset-password", validation(resetPasswordSchema), async (req, res, next) => {
+  try {
+    const { token, newPassword } = req.body;
+
+    const { data } = await authservice.resetPassword({ token, newPassword });
+
+    return successRes({ res, data, status: 200, message: "Password reset successful" });
+  } catch (error) {
+    next(error);
+  }
+}); 
 export default router;

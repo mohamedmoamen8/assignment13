@@ -78,8 +78,35 @@ const userShecma = new Schema(
       defult: providertypes.system,
       enum: Object.values(providertypes),
     },
+      isTwofactorEnabled: {
+    type: Boolean,
+    default: false,
   },
-
+  twofactorOtp: {
+    type: String,
+    default: null,
+  },  
+  twofactorOtpExpires: {
+    type: Date,
+    default: null,
+  },
+  forgotPasswordOtp: {
+    type: String,
+    default: null,
+  },
+  forgotPasswordOtpExpires: {
+    type: Date,
+    default: null,
+  },
+  resetPasswordOtp: {
+    type: String,
+    default: null,
+  },
+  resetPasswordOtpExpires: {
+    type: Date,
+    default: null,
+  },
+    },
   {
     timestamps: true,
     toJSON: {
@@ -107,9 +134,6 @@ userShecma
   .get(function () {
     return `${this.firstName} ${this.lastName}`;
   });
-
-
-
 userShecma.index(
   { createdAt: 1 },
   {
