@@ -1,30 +1,32 @@
-// import * as messageRepo from "./mes.repo.js";
-// import { errorRes } from "../../utils/resHandler.js";
+import { errorRes } from "../../utils/resHandler.js";
+import { create, findById, find } from "../../db/models/db.repo.js";
 
-// export const sendMessageService = async (data) => {
-//   const { receiverId, content } = data;
-
-//   if (!receiverId || !content) {
-//     errorRes({
-//       message: "receiverId and content are required",
-//       status: 400,
-//     });
-//   }
-
-//   const message = await messageRepo.createMessage(data);
-
-//   return { data: message };
-// };
-
-// export const getUserMessagesService = async (userId) => {
-//   if (!userId) {
-//     errorRes({
-//       message: "userId is required",
-//       status: 400,
-//     });
-//   }
-
-//   const messages = await messageRepo.findUserMessages(userId);
-
-//   return { data: messages };
-// };
+export const sendMessage = async ({ to, body, attachments }) => {
+  const user = await findById({ model: userModel, id: to });
+  if (!user) {
+    errorRes({
+      message: "receiver user not found",
+      status: 404,
+    });
+  }
+  const message = await create({
+    model: messageModel,
+    data: {
+      to: user._id,
+      body,
+      attachments,
+    },
+  });
+  return {
+    data: {
+      message,
+    },
+  };
+};
+export const getUserMessages = async (userId) => {
+  const messages = await messageRepo.find({
+    model: messageModel,
+    filter: { to: userId },
+  });
+  return { data: messages };
+};

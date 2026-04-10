@@ -106,6 +106,30 @@ const userShecma = new Schema(
     type: Date,
     default: null,
   },
+  
+resetPasswordToken: {
+  type: String,
+  default: null,
+},
+resetPasswordTokenExpires: {
+  type: Date,
+  default: null,
+},
+
+
+tokenVersion: {
+  type: Number,
+  default: 0,
+},
+
+lastOtpSentAt: {
+  type: Date,
+  default: null,
+},
+otpResendCount: {
+  type: Number,
+  default: 0,
+},
     },
   {
     timestamps: true,

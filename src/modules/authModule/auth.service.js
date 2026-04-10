@@ -9,12 +9,9 @@ import dotenv from "dotenv";
 import { OAuth2Client } from "google-auth-library";
 import { sendOTPEmail } from "../../utils/email.js";
 import { providertypes } from "../../db/enums/user.enums.js";
-<<<<<<< HEAD
-import redisClient from "../../utils/redisclient.js"; 
-=======
-import redisClient from "../../utils/redisClient.js";
+import redisClient from "../../utils/redisclient.js";
+import crypto from "crypto";
 
->>>>>>> 59a41b52b4a595f1982f2b65f515e104f4478048
 
 dotenv.config({
   path: "./config/.env.development",
@@ -84,16 +81,16 @@ if (foundUser.isTwoFactorEnabled) {
     });
   }
   const accessToken = jwt.sign(
-    { _id: foundUser._id },
-    process.env.TOKEN_SECRET,
-    { expiresIn: "15m" },
-  );
+  { _id: foundUser._id, tokenVersion: foundUser.tokenVersion },
+  process.env.TOKEN_SECRET,
+  { expiresIn: "15m" }
+);
 
-  const refreshToken = jwt.sign(
-    { _id: foundUser._id },
-    process.env.REFRESH_TOKEN_SECRET,
-    { expiresIn: "1d" },
-  );
+const refreshToken = jwt.sign(
+  { _id: foundUser._id, tokenVersion: foundUser.tokenVersion },
+  process.env.REFRESH_TOKEN_SECRET,
+  { expiresIn: "1d" }
+);
 
   return {
     data: {
@@ -144,17 +141,17 @@ export const googlesignup = async ({ gooleToken }) => {
     });
   }
 
-  const accessToken = jwt.sign(
-    { _id: user._id },
-    process.env.TOKEN_SECRET,
-    { expiresIn: "15m" }
-  );
+ const accessToken = jwt.sign(
+  { _id: foundUser._id, tokenVersion: foundUser.tokenVersion },
+  process.env.TOKEN_SECRET,
+  { expiresIn: "15m" }
+);
 
-  const refreshToken = jwt.sign(
-    { _id: user._id },
-    process.env.REFRESH_TOKEN_SECRET,
-    { expiresIn: "1d" }
-  );
+const refreshToken = jwt.sign(
+  { _id: foundUser._id, tokenVersion: foundUser.tokenVersion },
+  process.env.REFRESH_TOKEN_SECRET,
+  { expiresIn: "1d" }
+);
 
   return {
     data: {
@@ -190,7 +187,7 @@ export const updatePassword = async ({ userId, currentPassword, newPassword }) =
 export const logout = async ({ token }) => {
   const decoded = jwt.decode(token);
 
-  const ttl = decoded.exp - Math.floor(Date.now() / 1000);
+  const ttl = Math.ceil(decoded.exp - Date.now() / 1000); // ✅ Math.ceil → always a whole integer
 
   if (ttl > 0) {
     await redisClient.setEx(`blacklist_${token}`, ttl, "true");
@@ -198,7 +195,6 @@ export const logout = async ({ token }) => {
 
   return { data: { message: "Logged out successfully" } };
 };
-
 export const enableTwoFactor =async ({ userId }) => {
   const user = await userModel.findById(userId);
 
@@ -256,18 +252,17 @@ export const loginConfirm = async ({ email, otp }) => {
   user.twoFactorOtpExpires = null;
   await user.save();
 
-  const accessToken = jwt.sign(
-    { _id: user._id },
-    process.env.TOKEN_SECRET,
-    { expiresIn: "15m" }
-  );
+ const accessToken = jwt.sign(
+  { _id: foundUser._id, tokenVersion: foundUser.tokenVersion },
+  process.env.TOKEN_SECRET,
+  { expiresIn: "15m" }
+);
 
-  const refreshToken = jwt.sign(
-    { _id: user._id },
-    process.env.REFRESH_TOKEN_SECRET,
-    { expiresIn: "1d" }
-  );
-
+const refreshToken = jwt.sign(
+  { _id: foundUser._id, tokenVersion: foundUser.tokenVersion },
+  process.env.REFRESH_TOKEN_SECRET,
+  { expiresIn: "1d" }
+);
   return { data: { accessToken, refreshToken } };
 };
 
@@ -283,39 +278,113 @@ export const forgetPassword = async ({ email }) => {
     errorRes({ message: "Google accounts cannot reset password", status: 400 });
   }
 
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  
+  const resetToken = crypto.randomBytes(32).toString("hex");
 
-  user.resetPasswordOtp = otp;
-  user.resetPasswordOtpExpires = Date.now() + 5 * 60 * 1000; // 5 minutes
+  
+  const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+
+  user.resetPasswordToken = hashedToken;
+  user.resetPasswordTokenExpires = Date.now() + 15 * 60 * 1000; 
   await user.save();
 
-  await sendOTPEmail(email, otp);
+  
+  const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&email=${email}`;
 
-  return { data: { message: "Password reset OTP sent to your email" } };
+  await sendResetPasswordEmail(user.email, resetLink);
+
+  return { data: { message: "Password reset link sent to your email" } };
 };
 
 
-export const resetPassword = async ({ email, otp, newPassword }) => {
+export const resetPassword = async ({ email, token, newPassword }) => {
+ 
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
   const user = await userModel
     .findOne({ email })
-    .select("resetPasswordOtp resetPasswordOtpExpires password provider");
+    .select("resetPasswordToken resetPasswordTokenExpires password tokenVersion");
 
   if (!user) {
     errorRes({ message: "User not found", status: 404 });
   }
 
-  if (user.resetPasswordOtp !== otp) {
-    errorRes({ message: "Invalid OTP", status: 400 });
+  if (user.resetPasswordToken !== hashedToken) {
+    errorRes({ message: "Invalid reset link", status: 400 });
   }
 
-  if (Date.now() > user.resetPasswordOtpExpires) {
-    errorRes({ message: "OTP expired", status: 400 });
+  if (Date.now() > user.resetPasswordTokenExpires) {
+    errorRes({ message: "Reset link has expired", status: 400 });
   }
 
+ 
   user.password = await generateHash({ plaintext: newPassword, target: "argon" });
-  user.resetPasswordOtp = null;
-  user.resetPasswordOtpExpires = null;
+  user.resetPasswordToken = null;
+  user.resetPasswordTokenExpires = null;
+  user.tokenVersion += 1; 
   await user.save();
 
-  return { data: { message: "Password reset successfully" } };
+  return { data: { message: "Password reset successfully, please login again" } };
+};
+
+export const resendOtp = async ({ email }) => {
+  const user = await userModel.findOne({ email }).select(
+    "isEmailconfirmed lastOtpSentAt otpResendCount emailOtp emailOTPExpires"
+  );
+
+  if (!user) {
+    errorRes({ message: "User not found", status: 404 });
+  }
+
+  if (user.isEmailconfirmed) {
+    errorRes({ message: "Email is already confirmed", status: 400 });
+  }
+
+  // Rate limit: only 1 resend allowed per minute
+  if (user.lastOtpSentAt) {
+    const secondsSinceLastOtp = (Date.now() - user.lastOtpSentAt) / 1000;
+    if (secondsSinceLastOtp < 60) {
+      const waitSeconds = Math.ceil(60 - secondsSinceLastOtp);
+      errorRes({
+        message: `Please wait ${waitSeconds} seconds before requesting a new OTP`,
+        status: 429,
+      });
+    }
+  }
+
+  // Rate limit: max 5 resends total
+  if (user.otpResendCount >= 5) {
+    errorRes({
+      message: "Maximum OTP resend limit reached, please contact support",
+      status: 429,
+    });
+  }
+
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+  user.emailOtp = otp;
+  user.emailOTPExpires = Date.now() + 5 * 60 * 1000; // 5 minutes
+  user.lastOtpSentAt = new Date();
+  user.otpResendCount += 1;
+  await user.save();
+
+  await sendOTPEmail(email, otp);
+
+  return {
+    data: {
+      message: `OTP resent successfully (${user.otpResendCount}/5 attempts used)`,
+    },
+  };
+};
+export const logoutAllDevices = async ({ userId }) => {
+  const user = await userModel.findById(userId).select("tokenVersion");
+
+  if (!user) {
+    errorRes({ message: "User not found", status: 404 });
+  }
+
+  user.tokenVersion += 1; 
+  await user.save();
+
+  return { data: { message: "Logged out from all devices successfully" } };
 };

@@ -1,63 +1,25 @@
 import { Router } from "express";
-import * as messageService from "./mes.service.js";
-import { successRes } from "../../utils/res.handle.js";
-
+import { upload } from "../../middleware/upload.middleware.js";
 const router = Router();
-
-
-router.post("/", async (req, res, next) => {
-  try {
-    const { senderId, receiverId, message } = req.body;
-
-    const { data } = await messageService.sendMessage({
-      senderId,
-      receiverId,
-      message,
-    });
-
-    return successRes({
-      res,
-      status: 201,
-      message: "Message sent",
-      data,
-    });
-  } catch (err) {
-    next(err);
-  }
+router.post("/send-message", upload ({dest:"messages", name:"sarahaMessages" }).array('attachments', 5), async (req, res) => { 
+const  attachments= req.files.map(file=>file.path);
+  const { to, body } = req.body;
+  const {data} = await sendMessageService({ to, body, attachments });
+  return successRes({
+    res,
+    data,
+    status: 200,
+    message: "message sent",
+  });
 });
-
-
-router.get("/:receiverId", async (req, res, next) => {
-  try {
-    const { receiverId } = req.params;
-
-    const { data } =
-      await messageService.getReceivedMessages(receiverId);
-
-    return successRes({
-      res,
-      data,
-    });
-  } catch (err) {
-    next(err);
-  }
+router.get("/get-messages", async (req, res) => {
+  const userId = req.user._id;
+  const { data } = await getUserMessagesService(userId);
+  return successRes({
+    res,
+    data,
+    status: 200,
+    message: "messages retrieved",
+  });
 });
-
-router.delete("/:messageId", async (req, res, next) => {
-  try {
-    const { messageId } = req.params;
-
-    const { data } =
-      await messageService.deleteMessage(messageId);
-
-    return successRes({
-      res,
-      message: "Message deleted",
-      data,
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-
 export default router;

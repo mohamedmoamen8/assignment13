@@ -5,9 +5,11 @@ import userRouter from "./modules/userModule/user.controller.js";
 import authRouter from "./modules/authModule/auth.controller.js";
 import { DbConnection } from "./db/db.connection.js";
 import cors from "cors"
-import "./src/utils/cronJobs.js";
+import "./utils/cronJobs.js";
+import redisClient from "./utils/redisclient.js";
 export const bootstrap = async () => {
   DbConnection();
+
   const app = express();
   app.use(express.json());
   const PORT = 3000;

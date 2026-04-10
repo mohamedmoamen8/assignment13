@@ -1,6 +1,6 @@
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
-import redisClient from "../utils/redisClient.js";
+import redisClient from "../utils/redisclient.js";
 
 dotenv.config({
   path: "./config/.env.development",
@@ -47,6 +47,7 @@ export const authentication = async (req, res, next) => {
       throw new Error("Token is required", { cause: { status: 400 } });
     }
 
+    // Check if token is blacklisted (single device logout via Redis)
     const isBlacklisted = await redisClient.get(`blacklist_${token}`);
     if (isBlacklisted) {
       throw new Error("Token has been invalidated, please login again", {
@@ -55,8 +56,21 @@ export const authentication = async (req, res, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.TOKEN_SECRET);
-    req.user = decoded;
 
+    // Check tokenVersion (logout from all devices)
+    const user = await userModel.findById(decoded._id).select("tokenVersion");
+
+    if (!user) {
+      throw new Error("User not found", { cause: { status: 404 } });
+    }
+
+    if (decoded.tokenVersion !== user.tokenVersion) {
+      throw new Error("Session expired, please login again", {
+        cause: { status: 401 },
+      });
+    }
+
+    req.user = decoded;
     next();
   } catch (error) {
     next(error);

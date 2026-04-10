@@ -1,30 +1,41 @@
 import mongoose from "mongoose";
+import { Types } from "mysql2";
 
-
-const messageSchema = new mongoose.Schema(
+const { model, models, Schema } = mongoose;
+const schema = new Schema(
   {
-    senderId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      default: null,
-    },
-    receiverId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
-    content: {
+    body:{
       type: String,
-      required: true,
-      trim: true,
-    },
-    deletedAt: {
-      type: Date,
-    },
-  },
-  {
+      required: function () {
+        if(this.attachments.length === 0){
+          return true;
+        } else {    return false;
+        }
+      }
+    }, attachments: [{
+      type: String,
+      default: [],
+    }],
+    to: {
+      type:Types.ObjectId,
+      ref: "User",
+      required: true,   
+  }  },
+ {
     timestamps: true,
+    toJSON: {
+      virtuals: true,
+      getters: true,
+    },
+    toObject: {
+      virtuals: true,
+      getters: true,
+    },
+    strict: true,
+    strictQuery: true,
+    validateBeforeSave: true,
+    optimisticConcurrency: true,
   },
 );
 
-export const Message = mongoose.model("Message", messageSchema);
+export const messageModel =model("Message",schema);

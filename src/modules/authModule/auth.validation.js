@@ -29,26 +29,28 @@ export const loginSchema = {
     password: joi.string().min(6).max(100).required(),
   }),
 };
-export const updatePasswordSchema = Joi.object({
-  currentPassword: Joi.string().min(8).required(),
-  newPassword: Joi.string().min(8).disallow(Joi.ref("currentPassword")).required()
+export const updatePasswordSchema = joi.object({
+  currentPassword: joi.string().min(8).required(),
+  newPassword: joi.string().min(8).disallow(joi.ref("currentPassword")).required()
     .messages({ "any.invalid": "New password must be different from current password" }),
 });
-export const enableTwoFactorSchema = Joi.object({
-  otp: Joi.string().length(6).required(),
+export const enableTwoFactorSchema = joi.object({
+  otp: joi.string().length(6).required(),
 });
 
-export const loginConfirmSchema = Joi.object({
-  email: Joi.string().email().required(),
-  otp: Joi.string().length(6).required(),
+export const loginConfirmSchema = joi.object({
+  email: joi.string().email().required(),
+  otp: joi.string().length(6).required(),
 });
 
-export const forgetPasswordSchema = Joi.object({
-  email: Joi.string().email().required(),
+export const forgetPasswordSchema = joi.object({
+  email: joi.string().email().required(),
 });
-
-export const resetPasswordSchema = Joi.object({
-  email: Joi.string().email().required(),
-  otp: Joi.string().length(6).required(),
-  newPassword: Joi.string().min(8).required(),
+export const resendOtpSchema = joi.object({
+  email: joi.string().email().required(),
+});
+export const resetPasswordSchema = joi.object({
+  email: joi.string().email().required(),
+  token: joi.string().required(),
+  newPassword: joi.string().min(8).required(),
 });
