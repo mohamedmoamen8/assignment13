@@ -1,27 +1,35 @@
 import mongoose from "mongoose";
-import { Types } from "mysql2";
 
-const { model, models, Schema } = mongoose;
+const { model, Schema, Types } = mongoose; // ✅ get Types from mongoose
+
 const schema = new Schema(
   {
-    body:{
+    body: {
       type: String,
       required: function () {
-        if(this.attachments.length === 0){
+        if (this.attachments.length === 0) {
           return true;
-        } else {    return false;
+        } else {
+          return false;
         }
-      }
-    }, attachments: [{
+      },
+    },
+    attachments: [{
       type: String,
       default: [],
     }],
     to: {
-      type:Types.ObjectId,
+      type: Types.ObjectId, 
       ref: "User",
-      required: true,   
-  }  },
- {
+      required: true,
+    },
+    /* from: {
+      type: Types.ObjectId, // ✅ add sender reference
+      ref: "User",
+      required: true,
+    }, */
+  },
+  {
     timestamps: true,
     toJSON: {
       virtuals: true,
@@ -38,4 +46,4 @@ const schema = new Schema(
   },
 );
 
-export const messageModel =model("Message",schema);
+export const messageModel = model("Message", schema);

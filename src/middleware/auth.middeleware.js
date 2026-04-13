@@ -1,6 +1,8 @@
 import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
+import { userModel } from "../db/models/user.models.js";
 import redisClient from "../utils/redisclient.js";
+
 
 dotenv.config({
   path: "./config/.env.development",

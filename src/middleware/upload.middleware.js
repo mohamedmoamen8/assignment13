@@ -1,15 +1,17 @@
 import multer from "multer";
 import fs from "fs/promises";
 import { resolve } from "path";
+
 export const upload = ({ dest = "general", name } = {}) => {
   const storage = multer.diskStorage({
     destination: async (req, file, cb) => {
-      const folderPath = resolve(`./uploads/${dest}/${name}`);
+      // ✅ if name is not provided, just use dest folder directly
+      const folderPath = resolve(`./uploads/${dest}/${name ?? ""}`).replace(/\\$/, "").replace(/\/$/, "");
+      
       try {
-        const isFolderExist = await fs.access(folderPath, fs.constants.F_OK);
-        console.log(isFolderExist);
+        await fs.access(folderPath);
       } catch (error) {
-        await fs.mkdir(folderPath);
+        await fs.mkdir(folderPath, { recursive: true }); // ✅ recursive creates parent folders too
       }
 
       cb(null, folderPath);

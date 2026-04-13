@@ -82,11 +82,11 @@ const userShecma = new Schema(
     type: Boolean,
     default: false,
   },
-  twofactorOtp: {
+  twoFactorOTP: {
     type: String,
     default: null,
   },  
-  twofactorOtpExpires: {
+  twoFactorOTPExpires: {
     type: Date,
     default: null,
   },

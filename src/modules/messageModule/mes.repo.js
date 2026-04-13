@@ -1,12 +1,12 @@
-import { Message } from "./message.model.js=";
+import { messageModel  } from "../../db/models/message.model.js";
 
 export const createMessage = (data) => {
-  return Message.create(data);
+  return messageModel.create(data);
 };
 
 export const findUserMessages = (userId) => {
-  return Message.find({
-    receiverId: userId,
+  return messageModel.find({
+    to: userId,
     deletedAt: null,
   }).populate("senderId", "username email"); 
 };

@@ -9,6 +9,7 @@ export const coverPictureSchema = {
       .messages({
         "string.pattern.base": "Invalid user ID format",
       }),
+      imageIndex: joi.number().integer().min(0).max(1).optional(),
   }),
 };
 

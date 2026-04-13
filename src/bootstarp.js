@@ -12,8 +12,9 @@ export const bootstrap = async () => {
 
   const app = express();
   app.use(express.json());
+  app.use(express.urlencoded({ extended: true }));
   const PORT = 3000;
-app.use(cors())
+ app.use(cors())
   app.use("/user", userRouter);
   app.use("/message", messRouter);
   app.use("/auth", authRouter);

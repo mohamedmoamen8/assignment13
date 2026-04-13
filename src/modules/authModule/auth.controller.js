@@ -22,7 +22,6 @@ import { validation } from "../../middleware/valdation.middleware.js";
 import { loginSchema, signupSchema } from "./auth.validation.js";
 import { updatePasswordSchema } from "./auth.validation.js";
 import {
-  enableTwoFactorSchema,
   loginConfirmSchema,
   forgetPasswordSchema,
   resetPasswordSchema,
@@ -178,7 +177,6 @@ router.post("/logout", authentication, async (req, res, next) => {
 router.post(
   "/enable-2fa",
   authentication,
-  validation(enableTwoFactorSchema),
   async (req, res, next) => {
     try {
       const { data } = await authservice.enableTwoFactor({
